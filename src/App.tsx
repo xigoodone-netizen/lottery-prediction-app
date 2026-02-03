@@ -61,7 +61,7 @@ function App() {
     return p;
   };
 
-  // 辅助：获取该位置的核心特征原因 (逻辑保持严谨)
+  // 辅助：获取该位置的核心特征原因
   const getFeatureReason = (idx: number) => {
     const reasons = [
       '马尔可夫链转移概率最优节点',
@@ -170,7 +170,6 @@ function App() {
           background: white !important;
         }
         
-        /* 交替背景色样式 */
         .row-even { background: #f8fafc; }
         .row-odd { background: white; }
 
@@ -179,6 +178,26 @@ function App() {
         .custom-scrollbar::-webkit-scrollbar-thumb {
           background: rgba(0, 0, 0, 0.15);
           border-radius: 10px;
+        }
+
+        .hit-badge {
+          background: #10b981;
+          color: white;
+          padding: 2px 8px;
+          border-radius: 6px;
+          font-size: 10px;
+          font-weight: 900;
+          box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3);
+        }
+
+        .miss-badge {
+          background: #ef4444;
+          color: white;
+          padding: 2px 8px;
+          border-radius: 6px;
+          font-size: 10px;
+          font-weight: 900;
+          box-shadow: 0 4px 10px rgba(239, 68, 68, 0.3);
         }
       `}</style>
 
@@ -241,7 +260,7 @@ function App() {
           </div>
         )}
 
-        {/* Prediction Display (Moved Up) */}
+        {/* Prediction Display */}
         {currentPrediction && (
           <div className="neo-card p-8 md:p-10 animate-in zoom-in duration-500">
             <div className="flex items-center gap-3 mb-8">
@@ -279,11 +298,11 @@ function App() {
           </div>
         )}
 
-        {/* Dashboard Tabs */}
+        {/* Dashboard Content */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           {/* Left Column: Data Stream */}
           <div className="lg:col-span-4 space-y-8">
-            <div className="neo-card p-8 h-[700px] flex flex-col">
+            <div className="neo-card p-8 h-[800px] flex flex-col">
               <div className="flex items-center justify-between mb-8">
                 <div className="flex items-center gap-3">
                   <Database className="w-5 h-5 text-indigo-600" />
@@ -308,9 +327,9 @@ function App() {
             </div>
           </div>
 
-          {/* Right Column: Validation & Analysis */}
+          {/* Right Column: Validation */}
           <div className="lg:col-span-8 space-y-8">
-            <div className="neo-card p-8 h-[700px] flex flex-col">
+            <div className="neo-card p-8 h-[800px] flex flex-col">
               <div className="flex items-center justify-between mb-8">
                 <div className="flex items-center gap-3">
                   <CheckCircle2 className="w-5 h-5 text-indigo-600" />
@@ -323,49 +342,50 @@ function App() {
               
               <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 space-y-3">
                 {validations.slice().reverse().map((v, idx) => (
-                  <div key={v.id} className={`row-layered p-5 flex items-center justify-between ${idx % 2 === 0 ? 'row-even' : 'row-odd'}`}>
-                    <div className="flex flex-col">
+                  <div key={v.id} className={`row-layered p-4 flex flex-col gap-4 ${idx % 2 === 0 ? 'row-even' : 'row-odd'}`}>
+                    <div className="flex items-center justify-between border-b border-slate-100 pb-2">
                       <span className="mono text-xs font-bold text-slate-400">{formatPeriod(v.period)}</span>
-                      <span className="text-[9px] font-black text-indigo-500 uppercase mt-1 tracking-wider">验证通过</span>
+                      <span className="text-[9px] font-black text-indigo-500 uppercase tracking-wider">验证通过</span>
                     </div>
                     
-                    <div className="flex items-center gap-8">
+                    <div className="grid grid-cols-4 gap-4 items-center">
                       <div className="flex flex-col items-center">
                         <span className="text-[9px] font-extrabold text-slate-400 uppercase mb-2">实际开奖</span>
-                        <div className="flex gap-1.5">
+                        <div className="flex gap-1">
                           {[v.actualHundred, v.actualTen, v.actualOne].map((n, i) => (
-                            <span key={i} className="w-9 h-9 rounded-xl bg-slate-800 text-white flex items-center justify-center font-black text-sm shadow-xl">
+                            <span key={i} className="w-8 h-8 rounded-lg bg-slate-800 text-white flex items-center justify-center font-black text-xs">
                               {n}
                             </span>
                           ))}
                         </div>
                       </div>
 
-                      <div className="flex flex-col items-center">
-                        <span className="text-[9px] font-extrabold text-slate-400 uppercase mb-2">系统预测</span>
-                        <div className="flex gap-1.5">
-                          {[v.prediction.hundredRanking[0], v.prediction.tenRanking[0], v.prediction.oneRanking[0]].map((n, i) => (
-                            <span key={i} className="w-9 h-9 rounded-xl bg-slate-100 text-slate-800 flex items-center justify-center font-black text-sm border border-slate-200">
-                              {n}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-
-                      <div className="flex flex-col items-end min-w-[60px]">
-                        <span className="text-[9px] font-extrabold text-slate-400 uppercase mb-2">状态</span>
-                        {(v.hundredHit || v.tenHit || v.oneHit) ? (
-                          <div className="flex items-center gap-1.5 bg-emerald-500 text-white px-3 py-1 rounded-lg shadow-lg shadow-emerald-500/30">
-                            <span className="text-xs font-black">命中</span>
-                            <span className="text-[8px] font-bold opacity-80">HIT</span>
+                      {/* Position Analysis */}
+                      {['百位', '十位', '个位'].map((label, i) => {
+                        const predicted = i === 0 ? v.prediction.hundredRanking : i === 1 ? v.prediction.tenRanking : v.prediction.oneRanking;
+                        const actual = i === 0 ? v.actualHundred : i === 1 ? v.actualTen : v.actualOne;
+                        const isHit = predicted.slice(0, 3).includes(actual);
+                        
+                        return (
+                          <div key={label} className="flex flex-col items-center">
+                            <span className="text-[9px] font-extrabold text-slate-400 uppercase mb-2">{label}预测</span>
+                            <div className="flex items-center gap-2">
+                              <div className="flex gap-0.5">
+                                {predicted.slice(0, 3).map((n, idx) => (
+                                  <span key={idx} className={`w-6 h-6 rounded-md flex items-center justify-center font-bold text-[10px] border ${n === actual ? 'bg-red-500 text-white border-red-500' : 'bg-white text-slate-600 border-slate-200'}`}>
+                                    {n}
+                                  </span>
+                                ))}
+                              </div>
+                              {isHit ? (
+                                <span className="hit-badge">中</span>
+                              ) : (
+                                <span className="miss-badge">挂</span>
+                              )}
+                            </div>
                           </div>
-                        ) : (
-                          <div className="flex items-center gap-1.5 bg-red-400 text-white px-3 py-1 rounded-lg shadow-lg shadow-red-400/20">
-                            <span className="text-xs font-black">未中</span>
-                            <span className="text-[8px] font-bold opacity-80">MISS</span>
-                          </div>
-                        )}
-                      </div>
+                        );
+                      })}
                     </div>
                   </div>
                 ))}
@@ -374,18 +394,13 @@ function App() {
           </div>
         </div>
 
-        {/* Enhanced Analysis Overview (Moved to Bottom) */}
+        {/* Overview Overview */}
         <div className="neo-card overflow-hidden">
           <div className="p-8 border-b border-slate-100 flex items-center justify-between bg-slate-50/30">
             <div className="flex items-center gap-3">
               <Layers className="w-6 h-6 text-indigo-600" />
               <h2 className="text-xl font-black text-slate-800">强化分析结果概览</h2>
             </div>
-            {currentPrediction && (
-              <div className="bg-indigo-600 text-white px-6 py-2 rounded-2xl text-sm font-black mono shadow-2xl shadow-indigo-600/40">
-                NEXT: {currentPrediction.period.slice(-6)}
-              </div>
-            )}
           </div>
           
           <div className="p-8 md:p-10">
@@ -422,7 +437,7 @@ function App() {
           </div>
         </div>
 
-        {/* Detailed Feature Tabs (Secondary) */}
+        {/* Feature Tabs */}
         <div className="neo-card p-8">
           <Tabs defaultValue="matrix" className="w-full" onValueChange={setActiveTab}>
             <TabsList className="grid grid-cols-4 gap-4 bg-slate-100/50 p-1.5 rounded-2xl h-14 mb-8">
